@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+from itertools import product
 from Classic_SFM_python.util import triangulate, essentialMatrix, points_3d_visualize, cameraPose, keypointColor
 import os
 # camera intrinsics
@@ -16,20 +17,34 @@ init_cam = np.array([[1, 0, 0, 0],
                      [0, 0, 1, 0]])
 camera_pos = []
 camera_pos.append(init_cam)
-dir = 'example_data/hampi/'
+dir = 'example_data/cust_dataset/'
 # place images in this directory
 images = os.listdir(dir)
 
+images_A = [
+    # './example_data/cust_dataset/20180408195734.M0fZTP_thumb_0.png',
+    # './example_data/cust_dataset/20180408195734.M0fZTP_thumb_1.png',
+    # './example_data/cust_dataset/20180408195734.M0fZTP_thumb_2.png',
+    './example_data/cust_dataset/20180408195734.M0fZTP_thumb_3.png'
+]
+images_B = [
+    # './example_data/cust_dataset/20180408195813.JIwaT2_thumb_0.png',
+    # './example_data/cust_dataset/20180408195813.JIwaT2_thumb_1.png',
+    # './example_data/cust_dataset/20180408195813.JIwaT2_thumb_2.png',
+    './example_data/cust_dataset/20180408195813.JIwaT2_thumb_3.png'
+]
+images_pairs = product(images_A,images_B)
 # images = ['vlcsnap-2020-10-26-10h32m43s388.png',
 #           'vlcsnap-2020-10-26-10h32m50s487.png', 'vlcsnap-2020-10-26-10h32m56s617.png']
 keypoints = np.empty((0, 3))
 pointcolor = np.empty((0, 3))
 
-for j in range(len(images) - 1): # loop through images and compare two at a time
-    print("matching ",images[j],"and",images[j + 1])
-    img1 = cv.imread(dir + images[0], 1)  # queryimage # left image
-    img2 = cv.imread(dir + images[j + 1], 1)  # trainimage # right image
-    sift = cv.xfeatures2d.SIFT_create()
+for images_pair in images_pairs: # loop through images and compare two at a time
+    img1_filename, img2_filename = images_pair
+    print("matching ",img1_filename,"and",img2_filename)
+    img1 = cv.imread(img1_filename, 1)  # queryimage # left image
+    img2 = cv.imread(img2_filename, 1)  # trainimage # right image
+    sift = cv.SIFT_create()
     # akaze = cv.AKAZE_create()
     # find the keypoints and descriptors with SIFT
     kp1, des1 = sift.detectAndCompute(img1, None)
@@ -58,6 +73,8 @@ for j in range(len(images) - 1): # loop through images and compare two at a time
     pts2 = np.int32(pts2)
     # get fundamental matrix from matched points
     F, mask = cv.findFundamentalMat(pts1, pts2, cv.FM_LMEDS)
+    if mask is None: continue
+    if np.sum(mask) < 10: continue
     # We select only inlier points
     pts1 = pts1[mask.ravel() == 1]
     pts2 = pts2[mask.ravel() == 1]
